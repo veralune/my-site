@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project Inclusion — Parent Assistant Tool</title>
+  <meta name="description" content="A specialist-reviewed monthly home plan built for your child, direct access to SAS specialists at nominal cost, and measurable progress markers at every stage." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* ===== CHAT WIDGET ===== */
+    #chat-widget {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    #chat-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #f89d35;
+      color: #fff;
+      border: none;
+      border-radius: 50px;
+      padding: 14px 22px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(248,157,53,0.45);
+      transition: transform 0.2s, box-shadow 0.2s;
+      white-space: nowrap;
+    }
+    #chat-toggle:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 28px rgba(248,157,53,0.55);
+    }
+    #chat-toggle svg { flex-shrink: 0; }
+
+    #chat-panel {
+      display: none;
+      flex-direction: column;
+      position: absolute;
+      bottom: 68px;
+      right: 0;
+      width: 360px;
+      height: 480px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 8px 48px rgba(36,32,53,0.18);
+      overflow: hidden;
+      border: 1px solid rgba(36,32,53,0.08);
+    }
+    #chat-panel.open { display: flex; }
+
+    .chat-header {
+      background: #242035;
+      color: #fff;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .chat-header-info { display: flex; align-items: center; gap: 12px; }
+    .chat-avatar {
+      width: 36px;
+      height: 36px;
+      background: #f89d35;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .chat-header-text { line-height: 1.3; }
+    .chat-header-name { font-size: 14px; font-weight: 600; }
+    .chat-header-sub { font-size: 12px; opacity: 0.65; }
+    #chat-close {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.7);
+      cursor: pointer;
+      padding: 4px;
+      line-height: 1;
+      transition: color 0.15s;
+    }
+    #chat-close:hover { color: #fff; }
+
+    #chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    #chat-messages::-webkit-scrollbar { width: 4px; }
+    #chat-messages::-webkit-scrollbar-track { background: transparent; }
+    #chat-messages::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 4px; }
+
+    .chat-msg {
+      max-width: 82%;
+      padding: 10px 14px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.5;
+      animation: msgIn 0.18s ease;
+    }
+    @keyframes msgIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .chat-msg.bot {
+      background: #f5f4f8;
+      color: #242035;
+      border-bottom-left-radius: 4px;
+      align-self: flex-start;
+    }
+    .chat-msg.user {
+      background: #242035;
+      color: #fff;
+      border-bottom-right-radius: 4px;
+      align-self: flex-end;
+    }
+
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 12px 14px;
+      background: #f5f4f8;
+      border-radius: 16px;
+      border-bottom-left-radius: 4px;
+      align-self: flex-start;
+      width: fit-content;
+    }
+    .typing-dot {
+      width: 7px;
+      height: 7px;
+      background: #999;
+      border-radius: 50%;
+      animation: typingBounce 1.2s infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingBounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+      30% { transform: translateY(-5px); opacity: 1; }
+    }
+
+    .chat-input-area {
+      padding: 12px 16px;
+      border-top: 1px solid rgba(36,32,53,0.08);
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      flex-shrink: 0;
+      background: #fff;
+    }
+    #chat-input {
+      flex: 1;
+      border: 1.5px solid #e0dce8;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      resize: none;
+      outline: none;
+      line-height: 1.4;
+      max-height: 100px;
+      overflow-y: auto;
+      transition: border-color 0.15s;
+      color: #242035;
+    }
+    #chat-input:focus { border-color: #f89d35; }
+    #chat-input::placeholder { color: #aaa; }
+    #chat-send {
+      background: #f89d35;
+      border: none;
+      border-radius: 10px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s, transform 0.15s;
+    }
+    #chat-send:hover { background: #e08820; transform: scale(1.05); }
+    #chat-send:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+
+    @media (max-width: 480px) {
+      #chat-panel {
+        width: calc(100vw - 32px);
+        right: 0;
+        bottom: 64px;
+        height: 420px;
+      }
+      #chat-widget {
+        bottom: 16px;
+        right: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ==================== NAV ==================== -->
+<nav id="main-nav">
+  <a href="#hero" class="nav-logo">
+    Project Inclusion
+    <span>Parent Assistant Tool</span>
+  </a>
+
+  <div class="nav-links">
+    <a href="#how-it-works">How It Works</a>
+    <a href="#specialists">Specialists</a>
+    <a href="#partners">About</a>
+    <a href="#donors">For Partners</a>
+  </div>
+
+  <div class="nav-ctas">
+    <a href="#contact" class="btn btn-secondary">Partner With Us</a>
+    <a href="#contact" class="btn btn-primary">Get Your Home Plan</a>
+    <div class="nav-auth">
+      <a href="#" class="btn-login">Log In</a>
+      <a href="#" class="btn btn-signup">Sign Up</a>
+    </div>
+  </div>
+
+  <button class="mobile-menu-btn" id="menuBtn" aria-label="Toggle navigation">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+</nav>
+
+<!-- ==================== HERO ==================== -->
+<section id="hero">
+  <div class="hero-bg-accent"></div>
+  <div class="hero-image-wrap">
+    <img src="hugparentchild.png" alt="Parent with child" class="hero-image" />
+  </div>
+  <div class="container">
+    <div class="hero-content fade-in">
+      <span class="section-label">Sri Aurobindo Society · Since 2016</span>
+      <h1 class="hero-headline">
+        Eight months of structured, consistent support —<br />
+        <em>and a parent watched her child make eye contact for the first time.</em>
+      </h1>
+      <p class="hero-sub">
+        If you've just been told your child needs support — and you don't know where to start — this is where you start.
+      </p>
+      <div class="hero-stat-line">
+        In India, there are <strong>2 lakh</strong> registered special educators for <strong>80 lakh+</strong> children with learning differences. Most families recognise something is different — but have nowhere to go from there.
+      </div>
+      <p class="hero-desc">
+        <strong>Project Inclusion Parent Assistant Tool</strong> closes that gap: a specialist-reviewed monthly home plan built for your child, direct access to Sri Aurobindo Society (SAS) specialists at nominal cost, and measurable progress markers at every stage.
+      </p>
+      <div class="hero-ctas">
+        <a href="#contact" class="btn btn-primary">Get Your Child's Home Plan</a>
+        <a href="#contact" class="btn btn-outline">Book a Specialist</a>
+      </div>
+
+      <div class="hero-stats">
+        <div class="hero-stat-block">
+          <span class="hero-stat-number"><span>1</span>L+</span>
+          <span class="hero-stat-label">Children screened</span>
+        </div>
+        <div class="hero-stat-divider"></div>
+        <div class="hero-stat-block">
+          <span class="hero-stat-number"><span>45</span>K</span>
+          <span class="hero-stat-label">High risk identified</span>
+        </div>
+        <div class="hero-stat-divider"></div>
+        <div class="hero-stat-block">
+          <span class="hero-stat-number"><span>32</span></span>
+          <span class="hero-stat-label">States &amp; UTs</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== HOW IT WORKS ==================== -->
+<section id="how-it-works">
+  <div class="container">
+    <div class="section-header fade-in">
+      <span class="section-label">The Process</span>
+      <h2 class="section-title">Four steps. One clear path forward.</h2>
+      <p class="section-intro">
+        Most parents come to PAT after a teacher raises a concern or a school assessment — informed that something needs attention, but without a clear path forward. PAT provides that path.
+      </p>
+    </div>
+
+    <div class="steps-grid">
+      <div class="step-card fade-in">
+        <span class="step-number">01</span>
+        <div class="step-badge">Step 1 — Learn</div>
+        <h3 class="step-title">We help you understand what your child is going through</h3>
+        <p class="step-body">
+          Start with Project Inclusion's short online learning module — a self-paced guide that explains learning differences in plain language: what they look like at home, what they don't mean, and what support actually involves. Takes 20–30 minutes. No prior knowledge needed.
+        </p>
+      </div>
+
+      <div class="step-card fade-in">
+        <span class="step-number">02</span>
+        <div class="step-badge">Step 2 — Screen</div>
+        <h3 class="step-title">Use the screening tool</h3>
+        <p class="step-body">
+          The parent uses Project Inclusion's screening tool — a structured, guided process to identify the specific areas where the child needs support. No prior knowledge required.
+        </p>
+      </div>
+
+      <div class="step-card fade-in">
+        <span class="step-number">03</span>
+        <div class="step-badge">Step 3 — Report</div>
+        <h3 class="step-title">Receive a detailed report</h3>
+        <p class="step-body">
+          The screening generates a detailed report: a clear picture of where the child is, what is presenting as a challenge, and what categories of support are indicated.
+        </p>
+      </div>
+
+      <div class="step-card fade-in">
+        <span class="step-number">04</span>
+        <div class="step-badge">Step 4 — Home Plan</div>
+        <h3 class="step-title">Your child's monthly plan</h3>
+        <p class="step-body">
+          The report is reviewed by a specialist and fed into PAT, which generates a monthly home plan — five targeted activities, built around the child's specific profile, with progress markers the parent can observe and track.
+        </p>
+      </div>
+    </div>
+
+    <div class="steps-footnote fade-in">
+      When the plan needs direct specialist input, booking is available through the same platform. A coordinator responds within 24 hours. The first session is always a comprehensive assessment. In-person sessions available in Chandigarh, Delhi, Ghaziabad, Dehradun, Tirupati, and Mumbai. All other locations served online.
+    </div>
+  </div>
+</section>
+
+<!-- ==================== PLAN INCLUDES ==================== -->
+<section id="plan-includes">
+  <div class="container">
+    <div class="plan-inner">
+      <div class="plan-text fade-in">
+        <span class="section-label">What You Get</span>
+        <h2 class="section-title">A plan built around your child. Not a template.</h2>
+        <p>
+          Every monthly home plan is built around the child's specific area of focus — reading and writing, attention and focus, motor development, speech clarity, social communication — with five targeted activities, ten to twenty minutes each, three to five times a week, using materials available at home.
+        </p>
+        <p>
+          Each plan includes observable progress markers: what to look for, what to listen for, and how to track progress month on month. All plans are reviewed by a specialist before delivery.
+        </p>
+        <a href="#contact" class="btn btn-primary" style="margin-top:8px">Request a Home Plan</a>
+      </div>
+
+      <div class="plan-card fade-in">
+        <div class="plan-card-title">Every Monthly Plan Includes</div>
+
+        <div class="plan-item">
+          <div class="plan-item-dot"></div>
+          <div class="plan-item-text">
+            <strong>5 Targeted Activities</strong>
+            Built around your child's specific focus area
+          </div>
+        </div>
+
+        <div class="plan-item plan-item-highlight">
+          <div class="plan-item-dot"></div>
+          <div class="plan-item-text">
+            <strong>10–20 Minutes Each</strong>
+            3–5 times per week — fits into any family's routine
+          </div>
+        </div>
+
+        <div class="plan-item plan-item-highlight">
+          <div class="plan-item-dot"></div>
+          <div class="plan-item-text">
+            <strong>Household Materials Only</strong>
+            Nothing to buy. Everything uses what you already have at home.
+          </div>
+        </div>
+
+        <div class="plan-item">
+          <div class="plan-item-dot"></div>
+          <div class="plan-item-text">
+            <strong>Observable Progress Markers</strong>
+            What to look for and listen for, month on month
+          </div>
+        </div>
+
+        <div class="plan-item">
+          <div class="plan-item-dot"></div>
+          <div class="plan-item-text">
+            <strong>Specialist Reviewed</strong>
+            Every plan reviewed before delivery
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== BACKED BY ==================== -->
+<section id="backed-by">
+  <div class="container">
+    <div class="backed-grid">
+      <div class="backed-text fade-in">
+        <span class="section-label">Our Foundation</span>
+        <h2 class="section-title">Built on nearly a decade of on-ground work.</h2>
+        <p>
+          Project Inclusion was built in 2016 to close one of India's most persistent gaps in education: the near-absence of structured support for children with learning differences. Not a pilot — a programme that has been running, scaling, and learning across 32 states for nearly a decade.
+        </p>
+        <p>
+          Six Mother's Grace Centres of Excellence across Chandigarh, Delhi, Tirupati, Mumbai, Ghaziabad, and Dehradun. A dedicated app for teachers, a national LMS for inclusive education training, and a specialist network built over nearly a decade.
+        </p>
+        <p>
+          PAT brings this infrastructure directly to families — the parents who received a report and needed someone to translate it into action.
+        </p>
+      </div>
+
+      <div class="stats-block fade-in">
+        <div class="stat-item">
+          <span class="stat-value">1L+</span>
+          <span class="stat-desc">Children screened across India</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">45K</span>
+          <span class="stat-desc">Identified as high risk</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">15K</span>
+          <span class="stat-desc">Under active remediation</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">6</span>
+          <span class="stat-desc">Centres of Excellence nationwide</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SPECIALISTS ==================== -->
+<section id="specialists">
+  <div class="container">
+    <div class="section-header fade-in">
+      <span class="section-label">The Team</span>
+      <h2 class="section-title">The right specialist for your child's specific need.</h2>
+    </div>
+
+    <div class="specialists-grid">
+      <div class="specialist-card fade-in">
+        <div class="specialist-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f89d35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        </div>
+        <h3 class="specialist-name">Special Educator</h3>
+        <p class="specialist-desc">
+          Reading, writing, and academic skill development. Each engagement begins with a thorough understanding of where the child is — and builds forward from there.
+        </p>
+      </div>
+
+      <div class="specialist-card fade-in">
+        <div class="specialist-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f89d35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-1.07-4.13A3 3 0 0 1 4 12a3 3 0 0 1 2.5-2.95 2.5 2.5 0 0 1 3-3.05"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 1.07-4.13A3 3 0 0 0 20 12a3 3 0 0 0-2.5-2.95 2.5 2.5 0 0 0-3-3.05"/></svg>
+        </div>
+        <h3 class="specialist-name">Psychologist</h3>
+        <p class="specialist-desc">
+          Behaviour, anxiety, social skills, and formal assessment. For children who are working through something that needs to be named clearly before it can be addressed.
+        </p>
+      </div>
+
+      <div class="specialist-card fade-in">
+        <div class="specialist-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f89d35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+        </div>
+        <h3 class="specialist-name">Occupational Therapist</h3>
+        <p class="specialist-desc">
+          Fine motor skills, sensory processing, and daily living skills — the foundational capacities that make independence possible.
+        </p>
+      </div>
+
+      <div class="specialist-card fade-in">
+        <div class="specialist-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f89d35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="9" y2="10"/><line x1="12" y1="10" x2="12" y2="10"/><line x1="15" y1="10" x2="15" y2="10"/></svg>
+        </div>
+        <h3 class="specialist-name">Speech Therapist</h3>
+        <p class="specialist-desc">
+          Speech clarity, language development, and functional communication. Consistent, practical, and tailored to each child.
+        </p>
+      </div>
+    </div>
+
+    <div class="specialists-footer fade-in">
+      <p>All sessions at <strong>nominal cost</strong>, subsidised by Sri Aurobindo Society.</p>
+      <p>Coordinator response within <strong>24 hours</strong> of booking.</p>
+      <p>First session is always a <strong>comprehensive assessment</strong>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== TESTIMONIALS ==================== -->
+<section id="testimonials">
+  <div class="testimonials-image-strip">
+    <img src="parentchildeating.png" alt="Parent and child together" />
+    <div class="testimonials-image-overlay"></div>
+  </div>
+  <div class="container">
+    <div class="section-header fade-in">
+      <span class="section-label">What Parents See</span>
+      <h2 class="section-title">Progress that is visible. Change that is real.</h2>
+    </div>
+
+    <div class="testimonials-grid">
+      <div class="testimonial-card fade-in">
+        <span class="quote-mark">"</span>
+        <p class="testimonial-text">My child would not make eye contact. After 8 months, they started to.</p>
+        <span class="testimonial-source">Mother · Child aged 9 · Delhi</span>
+      </div>
+
+      <div class="testimonial-card fade-in">
+        <span class="quote-mark">"</span>
+        <p class="testimonial-text">She used to pull away when I hugged her. Now she comes and sits next to me on her own. I did not expect that to change. It did.</p>
+        <span class="testimonial-source">Mother · Child aged 6 · Chandigarh</span>
+      </div>
+
+      <div class="testimonial-card fade-in">
+        <span class="quote-mark">"</span>
+        <p class="testimonial-text">He has one teacher he trusts completely now. Getting to school used to be a battle every morning. It still takes time, but he goes — because he knows she is there.</p>
+        <span class="testimonial-source">Father · Child aged 11 · Mumbai</span>
+      </div>
+
+      <div class="testimonial-card fade-in">
+        <span class="quote-mark">"</span>
+        <p class="testimonial-text">We have a routine now. He knows what comes next, and that has changed everything — for him and for me.</p>
+        <span class="testimonial-source">Mother · Child aged 8 · Dehradun</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== IMAGE DIVIDER ==================== -->
+<div class="image-divider">
+  <img src="holdinghands.png" alt="" role="presentation" />
+  <div class="image-divider-overlay"></div>
+</div>
+
+<!-- ==================== PARTNERS ==================== -->
+<section id="partners">
+  <div class="container">
+    <div class="partners-inner">
+      <div class="partners-text fade-in">
+        <span class="section-label">Partners &amp; Recognition</span>
+        <h2 class="section-title">Institutional backing at every level.</h2>
+        <p>
+          Project Inclusion works with the bodies that govern standards for inclusion work in India — and is embedded in school systems that reach every kind of family.
+        </p>
+        <p>
+          The infrastructure is real, the partnerships are institutional, and the reach is national.
+        </p>
+        <span class="since-badge">On the ground since 2016</span>
+      </div>
+
+      <div class="partners-list fade-in">
+        <div class="partner-item">
+          <div class="partner-dot"></div>
+          <div>
+            <div class="partner-name">Ministry of Social Justice &amp; Empowerment</div>
+            <div class="partner-type">Government of India</div>
+          </div>
+        </div>
+        <div class="partner-item">
+          <div class="partner-dot"></div>
+          <div>
+            <div class="partner-name">Rehabilitation Council of India</div>
+            <div class="partner-type">Statutory Body, Govt. of India</div>
+          </div>
+        </div>
+        <div class="partner-item">
+          <div class="partner-dot"></div>
+          <div>
+            <div class="partner-name">National Council for Teacher Education</div>
+            <div class="partner-type">Statutory Body, Govt. of India</div>
+          </div>
+        </div>
+        <div class="partner-item">
+          <div class="partner-dot"></div>
+          <div>
+            <div class="partner-name">Kendriya Vidyalayas</div>
+            <div class="partner-type">Central School System</div>
+          </div>
+        </div>
+        <div class="partner-item">
+          <div class="partner-dot"></div>
+          <div>
+            <div class="partner-name">Army Public Schools</div>
+            <div class="partner-type">Defence School System</div>
+          </div>
+        </div>
+        <div class="partner-item">
+          <div class="partner-dot"></div>
+          <div>
+            <div class="partner-name">32 State &amp; UT Governments</div>
+            <div class="partner-type">Pan-India State Partnership</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== DONORS ==================== -->
+<section id="donors">
+  <div class="container">
+    <div class="donors-inner">
+      <span class="section-label fade-in">For Donors &amp; Partners</span>
+      <h2 class="section-title fade-in">The gap is documented.<br />The model is working.</h2>
+
+      <p class="fade-in">
+        Families whose children are flagged with learning differences typically receive an assessment report — and nothing beyond it. No home plan, no accessible specialist, no actionable next step. PAT is that next step: built on Project Inclusion's infrastructure, backed by nearly a decade of on-ground execution across 32 states, and structured at nominal cost so that access is substantive, not aspirational.
+      </p>
+
+      <p class="fade-in">
+        Your partnership directly scales the number of families who move from a flag to a plan — and from a plan to measurable progress. The question is how many more families we reach.
+      </p>
+
+      <a href="#contact" class="btn btn-primary fade-in">Partner with Project Inclusion</a>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== CONTACT ==================== -->
+<section id="contact">
+  <div class="container">
+    <div class="contact-inner">
+      <div class="contact-info fade-in">
+        <span class="section-label">Get Started</span>
+        <h2 class="section-title">We will be in touch within 24 hours.</h2>
+        <p>
+          To request a home plan or book a specialist session, reach out below. A coordinator will be in touch within 24 hours.
+        </p>
+
+        <div class="contact-detail">
+          <div class="contact-detail-icon">⏱</div>
+          <div class="contact-detail-text">
+            <strong>24-Hour Response</strong>
+            A coordinator will call you to understand your child's situation before anything else
+          </div>
+        </div>
+
+        <div class="contact-detail">
+          <div class="contact-detail-icon">📍</div>
+          <div class="contact-detail-text">
+            <strong>Online &amp; In-Person</strong>
+            Sessions available across select cities in India
+          </div>
+        </div>
+
+        <div class="contact-detail">
+          <div class="contact-detail-icon">₹</div>
+          <div class="contact-detail-text">
+            <strong>Nominal Cost</strong>
+            All sessions subsidised by Sri Aurobindo Society
+          </div>
+        </div>
+      </div>
+
+      <div class="contact-form fade-in">
+        <form id="contactForm" novalidate>
+          <div class="form-group">
+            <label for="name">Full Name</label>
+            <input type="text" id="name" name="name" placeholder="Your full name" required />
+          </div>
+          <div class="form-group">
+            <label for="phone">Mobile Number</label>
+            <input type="tel" id="phone" name="phone" placeholder="+91 00000 00000" required />
+          </div>
+          <div class="form-group">
+            <label for="city">City</label>
+            <input type="text" id="city" name="city" placeholder="Your city" required />
+          </div>
+          <button type="submit" class="btn btn-primary form-submit">Send</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== FOOTER ==================== -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="footer-logos">
+        <img src="Rupantar Logo.png" alt="Rupantar" class="footer-logo-img" />
+        <img src="Project Inclusion Logo.png" alt="Project Inclusion" class="footer-logo-img" />
+        <img src="Mother's Grace Centers Logo.png" alt="Mother's Grace Centres" class="footer-logo-img" />
+      </div>
+      <p>
+        Project Inclusion Parent Assistant Tool does not provide diagnosis or replace specialist clinical intervention. All plans are reviewed prior to delivery. Sessions available online and in select cities across India.
+      </p>
+    </div>
+    <div class="footer-right">
+      <p>A Sri Aurobindo Society initiative</p>
+      <p>© 2024 Sri Aurobindo Society. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
+
+<!-- ==================== JS ==================== -->
+<script>
+  // Scroll-triggered fade-ins
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.fade-in').forEach((el, i) => {
+    el.style.transitionDelay = `${(i % 4) * 0.08}s`;
+    observer.observe(el);
+  });
+
+  // Nav scroll shadow
+  const nav = document.getElementById('main-nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 20);
+  });
+
+  // Mobile menu
+  const menuBtn = document.getElementById('menuBtn');
+  menuBtn.addEventListener('click', () => {
+    document.body.classList.toggle('mobile-nav-open');
+  });
+
+  // Close mobile menu on link click
+  document.querySelectorAll('.nav-links a, .nav-ctas a').forEach(link => {
+    link.addEventListener('click', () => {
+      document.body.classList.remove('mobile-nav-open');
+    });
+  });
+
+  // Form submission
+  document.getElementById('contactForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const btn = this.querySelector('.form-submit');
+    btn.textContent = 'Sent — we will be in touch within 24 hours.';
+    btn.style.background = '#242035';
+    btn.disabled = true;
+  });
+
+  // Smooth scroll offset for fixed nav
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        e.preventDefault();
+        const offset = 80;
+        const top = target.getBoundingClientRect().top + window.scrollY - offset;
+        window.scrollTo({ top, behavior: 'smooth' });
+      }
+    });
+  });
+</script>
+
+<!-- ==================== CHAT WIDGET ==================== -->
+<div id="chat-widget">
+  <div id="chat-panel" role="dialog" aria-label="Chat with PAT assistant">
+    <div class="chat-header">
+      <div class="chat-header-info">
+        <div class="chat-avatar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <div class="chat-header-text">
+          <div class="chat-header-name">Project Inclusion PAT</div>
+          <div class="chat-header-sub">Ask me anything</div>
+        </div>
+      </div>
+      <button id="chat-close" aria-label="Close chat">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div id="chat-messages" aria-live="polite"></div>
+    <div class="chat-input-area">
+      <textarea id="chat-input" rows="1" placeholder="Type a question…" aria-label="Chat message"></textarea>
+      <button id="chat-send" aria-label="Send message">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <button id="chat-toggle" aria-label="Open chat">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+    Ask about your child
+  </button>
+</div>
+
+<script>
+(function() {
+  const panel    = document.getElementById('chat-panel');
+  const toggle   = document.getElementById('chat-toggle');
+  const closeBtn = document.getElementById('chat-close');
+  const messages = document.getElementById('chat-messages');
+  const input    = document.getElementById('chat-input');
+  const sendBtn  = document.getElementById('chat-send');
+
+  const history = [];
+  let isOpen = false;
+  let isWaiting = false;
+  let intakeDone = false;
+
+  function openChat() {
+    isOpen = true;
+    panel.classList.add('open');
+    toggle.style.display = 'none';
+    if (messages.children.length === 0) {
+      addMessage('bot', 'Hi! I can answer questions about the PAT programme, how it works, and what support is available. What would you like to know?');
+    }
+    setTimeout(() => input.focus(), 80);
+  }
+
+  function closeChat() {
+    isOpen = false;
+    panel.classList.remove('open');
+    toggle.style.display = '';
+  }
+
+  toggle.addEventListener('click', openChat);
+  closeBtn.addEventListener('click', closeChat);
+
+  function addMessage(role, text) {
+    const div = document.createElement('div');
+    div.className = 'chat-msg ' + role;
+    div.textContent = text;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+    return div;
+  }
+
+  function showTyping() {
+    const el = document.createElement('div');
+    el.className = 'typing-indicator';
+    el.id = 'typing';
+    el.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+    messages.appendChild(el);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function hideTyping() {
+    const el = document.getElementById('typing');
+    if (el) el.remove();
+  }
+
+  async function sendMessage() {
+    const text = input.value.trim();
+    if (!text || isWaiting) return;
+
+    addMessage('user', text);
+    history.push({ role: 'user', content: text });
+    input.value = '';
+    input.style.height = 'auto';
+    isWaiting = true;
+    sendBtn.disabled = true;
+    showTyping();
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: history })
+      });
+
+      const data = await res.json();
+      hideTyping();
+
+      const reply = data.reply || 'Sorry, something went wrong. Please try again.';
+      addMessage('bot', reply);
+      history.push({ role: 'assistant', content: reply });
+
+      // Intake complete — POST to generate-proposal and lock input
+      if (data.intake_complete && !intakeDone) {
+        intakeDone = true;
+        input.disabled = true;
+        sendBtn.disabled = true;
+        input.placeholder = 'Check your inbox shortly.';
+
+        fetch('/api/generate-proposal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            intake_data: data.intake_data,
+            messages: history
+          })
+        }).catch(() => {}); // fire and forget
+      }
+
+    } catch (err) {
+      hideTyping();
+      addMessage('bot', 'Sorry, I could not connect. Please try again.');
+    } finally {
+      isWaiting = false;
+      if (!intakeDone) {
+        sendBtn.disabled = false;
+        input.focus();
+      }
+    }
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  // Auto-resize textarea
+  input.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+  });
+})();
+</script>
+
+</body>
+</html>
