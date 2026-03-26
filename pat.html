@@ -266,7 +266,7 @@
 <script>
   const LANGUAGES = ['English','Hindi','Tamil','Telugu','Marathi','Bengali','Kannada','Gujarati'];
   const SPECIALISTS = ['Special Educator','Psychologist','Occupational Therapist (OT)','Speech Therapist'];
-  const MENU_OPTIONS = ['Get Home Plan','Book a Specialist','Help'];
+  const MENU_OPTIONS = ['Upload Report', 'Book a Specialist', 'Help'];
 
   let messages = [];   // conversation history sent to API
   let profile = JSON.parse(localStorage.getItem('pat_profile') || 'null');
@@ -476,7 +476,8 @@
         showQuickReplies(SPECIALISTS, s => sendUserMessage(s));
       } else if (data.booking) {
         sendBookingEmail(data.booking.specialist);
-        showQuickReplies(['Back to Menu'], opt => sendUserMessage(opt));
+        document.querySelectorAll('.quick-replies').forEach(el => el.remove());
+        showQuickReplies(['Upload Report', 'Help'], opt => sendUserMessage(opt));
       }
 
     } catch (err) {
