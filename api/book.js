@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
   }
 
   const origin = req.headers['origin'] || req.headers['referer'] || '';
-  if (!origin.startsWith(ALLOWED_ORIGIN)) {
+  if (ALLOWED_ORIGIN && !origin.includes(ALLOWED_ORIGIN.replace('https://', ''))) {
     res.status(403).json({ error: 'Forbidden' });
     return;
   }

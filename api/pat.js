@@ -100,7 +100,8 @@ module.exports = async (req, res) => {
 
   // Origin check — block requests not coming from the PAT site
   const origin = req.headers['origin'] || req.headers['referer'] || '';
-  if (!origin.startsWith(ALLOWED_ORIGIN)) {
+  console.log('PAT origin:', origin, 'allowed:', ALLOWED_ORIGIN);
+  if (ALLOWED_ORIGIN && !origin.includes(ALLOWED_ORIGIN.replace('https://', ''))) {
     res.status(403).json({ error: 'Forbidden' });
     return;
   }
