@@ -509,6 +509,8 @@
 
   function sendUserMessage(text) {
     if (!text.trim()) return;
+    // Remove all quick reply bars before sending
+    document.querySelectorAll('.quick-replies').forEach(el => el.remove());
     addMessage('user', text);
     inputEl.value = '';
     inputEl.style.height = 'auto';
