@@ -187,29 +187,33 @@ module.exports = async (req, res) => {
 
     if (rawReply.includes('[SHOW_LANGUAGES]')) {
       result.action = 'show_languages';
-      result.reply = '';
     } else if (rawReply.includes('[SHOW_MENU]')) {
       result.action = 'show_menu';
-      result.reply = rawReply.replace('[SHOW_MENU]', '').trim();
     } else if (rawReply.includes('[PLAN_READY]')) {
       result.action = 'plan_ready';
-      result.reply = rawReply.replace('[PLAN_READY]', '').trim();
     } else if (rawReply.includes('[SHOW_SPECIALISTS]')) {
       result.action = 'show_specialists';
-      result.reply = rawReply.replace('[SHOW_SPECIALISTS]', '').trim();
     }
 
     const profileMatch = rawReply.match(/\[PROFILE:(\{.*?\})\]/s);
     if (profileMatch) {
       try { result.profile = JSON.parse(profileMatch[1]); } catch {}
-      result.reply = rawReply.replace(/\[PROFILE:.*?\]/s, '').trim();
     }
 
     const bookingMatch = rawReply.match(/\[BOOKING:(\{.*?\})\]/s);
     if (bookingMatch) {
       try { result.booking = JSON.parse(bookingMatch[1]); } catch {}
-      result.reply = rawReply.replace(/\[BOOKING:.*?\]/s, '').trim();
     }
+
+    // Strip all markers from reply
+    result.reply = rawReply
+      .replace(/\[SHOW_LANGUAGES\]/g, '')
+      .replace(/\[SHOW_MENU\]/g, '')
+      .replace(/\[PLAN_READY\]/g, '')
+      .replace(/\[SHOW_SPECIALISTS\]/g, '')
+      .replace(/\[PROFILE:\{.*?\}\]/gs, '')
+      .replace(/\[BOOKING:\{.*?\}\]/gs, '')
+      .trim();
 
     res.status(200).json(result);
 
