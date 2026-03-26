@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PAT — Parent Assistant Tool | Project Inclusion</title>
+  <meta name="description" content="Get a personalised monthly home activity plan for your child and book sessions with specialists." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --purple: #242035;
+      --orange: #f89d35;
+      --white: #ffffff;
+      --light: #f5f4f8;
+      --border: #e2e0ea;
+      --text: #1a1a2e;
+      --muted: #6b6880;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--light);
+      color: var(--text);
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--purple);
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+    }
+    .header-logos {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .header-logos img {
+      height: 32px;
+      object-fit: contain;
+    }
+    .header-title {
+      color: var(--white);
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+    .header-back {
+      color: var(--orange);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    /* ── Layout ── */
+    .chat-layout {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      padding-top: 60px;
+    }
+
+    /* ── Messages ── */
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .msg {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      max-width: 85%;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+    .msg.bot  { align-self: flex-start; }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--purple);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 14px;
+    }
+
+    .bubble {
+      padding: 12px 16px;
+      border-radius: 18px;
+      font-size: 14px;
+      line-height: 1.6;
+      max-width: 100%;
+    }
+    .msg.user .bubble {
+      background: var(--orange);
+      color: var(--white);
+      border-bottom-right-radius: 4px;
+    }
+    .msg.bot .bubble {
+      background: var(--white);
+      color: var(--text);
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .bubble h2 { font-size: 15px; font-weight: 700; margin: 10px 0 4px; color: var(--purple); }
+    .bubble h3 { font-size: 13px; font-weight: 600; margin: 10px 0 3px; color: var(--orange); }
+    .bubble strong { font-weight: 600; }
+    .bubble ul { padding-left: 18px; margin: 4px 0; }
+    .bubble li { margin: 2px 0; }
+    .bubble p { margin: 4px 0; }
+
+    /* ── Quick reply buttons ── */
+    .quick-replies {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 4px 16px 8px 52px;
+    }
+    .qr-btn {
+      background: var(--white);
+      border: 1.5px solid var(--orange);
+      color: var(--orange);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .qr-btn:hover {
+      background: var(--orange);
+      color: var(--white);
+    }
+
+    /* ── Typing indicator ── */
+    .typing .bubble {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      padding: 14px 18px;
+    }
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--muted);
+      animation: bounce 1.2s infinite;
+    }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-6px); }
+    }
+
+    /* ── Input bar ── */
+    .input-bar {
+      background: var(--white);
+      border-top: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    #user-input {
+      flex: 1;
+      border: 1.5px solid var(--border);
+      border-radius: 24px;
+      padding: 10px 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      resize: none;
+      outline: none;
+      max-height: 120px;
+      line-height: 1.5;
+      transition: border-color 0.15s;
+    }
+    #user-input:focus { border-color: var(--orange); }
+    #send-btn {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      background: var(--orange);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    #send-btn:hover { background: #e08a20; }
+    #send-btn svg { width: 18px; height: 18px; }
+
+    /* ── Download button ── */
+    .download-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      background: var(--purple);
+      color: var(--white);
+      padding: 9px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.15s;
+    }
+    .download-btn:hover { background: #16094b; }
+
+    @media (max-width: 480px) {
+      .msg { max-width: 95%; }
+      .bubble { font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-logos">
+    <img src="Rupantar Logo.png" alt="Rupantar" onerror="this.style.display='none'" />
+    <img src="Project Inclusion Logo.png" alt="Project Inclusion" onerror="this.style.display='none'" />
+  </div>
+  <span class="header-title">Parent Assistant Tool</span>
+  <a href="/" class="header-back">← Home</a>
+</header>
+
+<div class="chat-layout">
+  <div id="messages"></div>
+  <div class="input-bar">
+    <textarea id="user-input" rows="1" placeholder="Type a message..."></textarea>
+    <button id="send-btn" aria-label="Send">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- jsPDF for client-side PDF generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+  const LANGUAGES = ['English','Hindi','Tamil','Telugu','Marathi','Bengali','Kannada','Gujarati'];
+  const SPECIALISTS = ['Special Educator','Psychologist','Occupational Therapist (OT)','Speech Therapist'];
+  const MENU_OPTIONS = ['Get Home Plan','Book a Specialist','Help'];
+
+  let messages = [];   // conversation history sent to API
+  let profile = JSON.parse(localStorage.getItem('pat_profile') || 'null');
+  let planContent = '';
+
+  const messagesEl = document.getElementById('messages');
+  const inputEl    = document.getElementById('user-input');
+  const sendBtn    = document.getElementById('send-btn');
+
+  // ── Render helpers ──
+
+  function renderMarkdown(text) {
+    return text
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^- (.+)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+      .replace(/\n{2,}/g, '</p><p>')
+      .replace(/^(?!<[hul])/gm, '')
+      .trim();
+  }
+
+  function addMessage(role, text, skipHistory) {
+    if (!skipHistory) {
+      messages.push({ role, content: text });
+    }
+    const wrap = document.createElement('div');
+    wrap.className = `msg ${role === 'user' ? 'user' : 'bot'}`;
+
+    if (role !== 'user') {
+      const av = document.createElement('div');
+      av.className = 'avatar';
+      av.textContent = '🤝';
+      wrap.appendChild(av);
+    }
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.innerHTML = renderMarkdown(text);
+    wrap.appendChild(bubble);
+
+    messagesEl.appendChild(wrap);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return bubble;
+  }
+
+  function showTyping() {
+    const wrap = document.createElement('div');
+    wrap.className = 'msg bot typing';
+    wrap.id = 'typing';
+    wrap.innerHTML = `<div class="avatar">🤝</div><div class="bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+    messagesEl.appendChild(wrap);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function removeTyping() {
+    const t = document.getElementById('typing');
+    if (t) t.remove();
+  }
+
+  function showQuickReplies(options, onSelect) {
+    const bar = document.createElement('div');
+    bar.className = 'quick-replies';
+    options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'qr-btn';
+      btn.textContent = opt;
+      btn.onclick = () => {
+        bar.remove();
+        onSelect(opt);
+      };
+      bar.appendChild(btn);
+    });
+    messagesEl.appendChild(bar);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function showDownloadButton(content) {
+    const lastBubble = messagesEl.querySelector('.msg.bot:last-of-type .bubble');
+    if (!lastBubble) return;
+    const btn = document.createElement('button');
+    btn.className = 'download-btn';
+    btn.innerHTML = '⬇ Download as PDF';
+    btn.onclick = () => downloadPDF(content);
+    lastBubble.appendChild(btn);
+  }
+
+  // ── PDF generation ──
+
+  function downloadPDF(content) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const purple = [36, 32, 53];
+    const orange = [248, 157, 53];
+    const childName = profile ? profile.child_name : 'Child';
+
+    // Header bar
+    doc.setFillColor(...purple);
+    doc.rect(0, 0, 210, 22, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Home Plan for ${childName}`, 105, 14, { align: 'center' });
+
+    let y = 32;
+    doc.setTextColor(0, 0, 0);
+
+    content.split('\n').forEach(line => {
+      if (y > 275) { doc.addPage(); y = 20; }
+      const clean = line.trim();
+      if (!clean) { y += 3; return; }
+
+      if (clean.startsWith('## ')) {
+        doc.setFillColor(...purple);
+        doc.rect(14, y - 5, 182, 9, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text(clean.replace('## ', ''), 18, y + 1);
+        doc.setTextColor(0, 0, 0);
+        y += 12;
+      } else if (clean.startsWith('### ')) {
+        doc.setTextColor(...orange);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(clean.replace('### ', ''), 14, y);
+        doc.setTextColor(0, 0, 0);
+        y += 8;
+      } else if (clean.startsWith('**') && clean.endsWith('**')) {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        const wrapped = doc.splitTextToSize(clean.replace(/\*\*/g, ''), 176);
+        doc.text(wrapped, 14, y);
+        y += wrapped.length * 6;
+      } else if (clean.startsWith('- ')) {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        const wrapped = doc.splitTextToSize('• ' + clean.slice(2), 170);
+        doc.text(wrapped, 20, y);
+        y += wrapped.length * 6;
+      } else {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        const wrapped = doc.splitTextToSize(clean, 176);
+        doc.text(wrapped, 14, y);
+        y += wrapped.length * 6;
+      }
+    });
+
+    // Footer
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text('Generated by Project Inclusion PAT | Sri Aurobindo Society', 105, 290, { align: 'center' });
+
+    doc.save(`${childName}_Home_Plan.pdf`);
+  }
+
+  // ── API call ──
+
+  async function sendToAPI(userText) {
+    showTyping();
+    setInputEnabled(false);
+
+    try {
+      const res = await fetch('/api/pat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages })
+      });
+
+      removeTyping();
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        addMessage('assistant', err.error || 'Something went wrong. Please try again.', true);
+        setInputEnabled(true);
+        return;
+      }
+
+      const data = await res.json();
+      messages.push({ role: 'assistant', content: data.reply || '' });
+
+      if (data.profile) {
+        profile = data.profile;
+        localStorage.setItem('pat_profile', JSON.stringify(profile));
+      }
+
+      if (data.action === 'show_languages') {
+        addMessage('assistant', 'Hello! 👋 Welcome to Project Inclusion.\n\nPlease choose your language:', true);
+        showQuickReplies(LANGUAGES, lang => sendUserMessage(lang));
+        setInputEnabled(true);
+        return;
+      }
+
+      if (data.reply) {
+        addMessage('assistant', data.reply, true);
+      }
+
+      if (data.action === 'show_menu') {
+        showQuickReplies(MENU_OPTIONS, opt => sendUserMessage(opt));
+      } else if (data.action === 'plan_ready') {
+        planContent = data.reply;
+        showDownloadButton(planContent);
+        showQuickReplies(['Book a Specialist', 'Back to Menu'], opt => sendUserMessage(opt));
+      } else if (data.action === 'show_specialists') {
+        showQuickReplies(SPECIALISTS, s => sendUserMessage(s));
+      } else if (data.booking) {
+        sendBookingEmail(data.booking.specialist);
+        showQuickReplies(['Back to Menu'], opt => sendUserMessage(opt));
+      }
+
+    } catch (err) {
+      removeTyping();
+      addMessage('assistant', 'Connection error. Please check your internet and try again.', true);
+    }
+
+    setInputEnabled(true);
+  }
+
+  // ── Booking email ──
+
+  async function sendBookingEmail(specialist) {
+    if (!profile) return;
+    try {
+      await fetch('/api/book', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ specialist, profile })
+      });
+    } catch {}
+  }
+
+  // ── Input handling ──
+
+  function setInputEnabled(enabled) {
+    inputEl.disabled = !enabled;
+    sendBtn.disabled = !enabled;
+  }
+
+  function sendUserMessage(text) {
+    if (!text.trim()) return;
+    addMessage('user', text);
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+    sendToAPI(text);
+  }
+
+  sendBtn.addEventListener('click', () => sendUserMessage(inputEl.value.trim()));
+
+  inputEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendUserMessage(inputEl.value.trim());
+    }
+  });
+
+  inputEl.addEventListener('input', () => {
+    inputEl.style.height = 'auto';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+  });
+
+  // ── Init ──
+
+  function init() {
+    if (profile) {
+      addMessage('assistant', `Welcome back! 👋\n\nI have ${profile.child_name}'s profile saved.\n\nWhat would you like to do?`, true);
+      showQuickReplies(MENU_OPTIONS, opt => sendUserMessage(opt));
+    } else {
+      messages.push({ role: 'user', content: 'start' });
+      sendToAPI('start');
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
