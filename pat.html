@@ -427,7 +427,7 @@
 
   // ── API call ──
 
-  async function sendToAPI(userText) {
+  async function sendToAPI() {
     showTyping();
     setInputEnabled(false);
 
@@ -512,7 +512,7 @@
     if (!text.trim()) return;
     // Remove all quick reply bars before sending
     document.querySelectorAll('.quick-replies').forEach(el => el.remove());
-    // Make intent explicit for key actions
+    // Display the button label but send explicit prompt for key actions
     let apiText = text;
     if (text === 'Get Home Plan') {
       const p = profile;
@@ -520,10 +520,12 @@
         ? `Please generate a monthly home activity plan for ${p.child_name}, age ${p.child_age}, challenge: ${p.child_challenge}. Output [PLAN_READY] at the end.`
         : 'Please generate a monthly home activity plan.';
     }
-    addMessage('user', text);
+    // Show display text in chat, push API text to history
+    addMessage('user', text, true);
+    messages.push({ role: 'user', content: apiText });
     inputEl.value = '';
     inputEl.style.height = 'auto';
-    sendToAPI(apiText);
+    sendToAPI();
   }
 
   sendBtn.addEventListener('click', () => sendUserMessage(inputEl.value.trim()));
