@@ -520,6 +520,29 @@
     if (!text.trim()) return;
     // Remove all quick reply bars before sending
     document.querySelectorAll('.quick-replies').forEach(el => el.remove());
+    // Handle certain actions client-side
+    if (text === 'Yes, looks good') {
+      addMessage('user', text, true);
+      messages.push({ role: 'user', content: 'Yes, confirmed.' });
+      inputEl.value = '';
+      addMessage('assistant', `Profile saved! ✅\n\nWhat would you like to do next?`, true);
+      messages.push({ role: 'assistant', content: 'Profile saved. What would you like to do next?' });
+      showQuickReplies(MENU_OPTIONS, opt => sendUserMessage(opt));
+      return;
+    }
+    if (text === 'No, start again') {
+      messages = [];
+      profile = null;
+      localStorage.removeItem('pat_profile');
+      addMessage('user', text, true);
+      addMessage('assistant', 'No problem — let\'s start again. What is your child\'s name?', true);
+      messages.push({ role: 'user', content: 'start' });
+      messages.push({ role: 'assistant', content: '[SHOW_LANGUAGES]' });
+      messages.push({ role: 'user', content: 'restart' });
+      messages.push({ role: 'assistant', content: 'Let\'s start again. What is your child\'s name?' });
+      inputEl.value = '';
+      return;
+    }
     // Display the button label but send explicit prompt for key actions
     let apiText = text;
     if (text === 'Get Home Plan') {
