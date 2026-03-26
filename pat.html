@@ -537,6 +537,9 @@
       showQuickReplies(MENU_OPTIONS, opt => sendUserMessage(opt));
     } else {
       // Show language selection instantly — no API call needed
+      // Prime message history so API knows we already passed the start step
+      messages.push({ role: 'user', content: 'start' });
+      messages.push({ role: 'assistant', content: '[SHOW_LANGUAGES]' });
       addMessage('assistant', 'Hello! 👋 Welcome to Project Inclusion.\n\nPlease choose your language:\n\nनमस्ते! कृपया अपनी भाषा चुनें:', true);
       showQuickReplies(LANGUAGES, lang => sendUserMessage(lang));
     }
