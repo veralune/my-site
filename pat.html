@@ -512,10 +512,18 @@
     if (!text.trim()) return;
     // Remove all quick reply bars before sending
     document.querySelectorAll('.quick-replies').forEach(el => el.remove());
+    // Make intent explicit for key actions
+    let apiText = text;
+    if (text === 'Get Home Plan') {
+      const p = profile;
+      apiText = p
+        ? `Please generate a monthly home activity plan for ${p.child_name}, age ${p.child_age}, challenge: ${p.child_challenge}. Output [PLAN_READY] at the end.`
+        : 'Please generate a monthly home activity plan.';
+    }
     addMessage('user', text);
     inputEl.value = '';
     inputEl.style.height = 'auto';
-    sendToAPI(text);
+    sendToAPI(apiText);
   }
 
   sendBtn.addEventListener('click', () => sendUserMessage(inputEl.value.trim()));
