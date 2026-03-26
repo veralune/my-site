@@ -536,8 +536,9 @@
       addMessage('assistant', `Welcome back! 👋\n\nI have ${profile.child_name}'s profile saved.\n\nWhat would you like to do?`, true);
       showQuickReplies(MENU_OPTIONS, opt => sendUserMessage(opt));
     } else {
-      messages.push({ role: 'user', content: 'start' });
-      sendToAPI('start');
+      // Show language selection instantly — no API call needed
+      addMessage('assistant', 'Hello! 👋 Welcome to Project Inclusion.\n\nPlease choose your language:\n\nनमस्ते! कृपया अपनी भाषा चुनें:', true);
+      showQuickReplies(LANGUAGES, lang => sendUserMessage(lang));
     }
   }
 
