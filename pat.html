@@ -453,6 +453,14 @@
       if (data.profile) {
         profile = data.profile;
         localStorage.setItem('pat_profile', JSON.stringify(profile));
+        // Show profile summary client-side so details are always visible
+        addMessage('assistant',
+          `Here's what I have:\n\n👦 Name: ${profile.child_name}\n🎂 Age: ${profile.child_age}\n📌 Challenge: ${profile.child_challenge}\n📧 Email: ${profile.child_email}\n\nIs this correct?`,
+          true
+        );
+        showQuickReplies(['Yes, looks good', 'No, start again'], opt => sendUserMessage(opt));
+        setInputEnabled(true);
+        return;
       }
 
       if (data.action === 'show_languages') {
